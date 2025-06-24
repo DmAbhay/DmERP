@@ -1,0 +1,27 @@
+
+server:
+  port: 8085
+
+spring:
+  application:
+    name: utility
+  boot:
+    admin:
+      client:
+        url: http://localhost:1111
+  zipkin:
+    base-url: http://localhost:9411
+  sleuth:
+    sampler:
+      probability: 1.0
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
