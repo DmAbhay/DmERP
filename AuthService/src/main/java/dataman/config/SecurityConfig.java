@@ -16,6 +16,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -27,14 +32,28 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+        List<String> patternsList = new ArrayList<>();
+        for (String config : listOfAllConfigs(System.getProperty("CONFIG_DIR"))) {
+            patternsList.add("/api/datamanerp/" + config + "/centralized-login-new");
+        }
+
+        patternsList.add("/api/datamanerp/validate-token-new");
+        patternsList.add("/api/datamanerp/centralized-login-new");
+        patternsList.add("/api/datamanerp/employees/filter-records");
+        patternsList.add("/api/datamanerp/employees/filter-recordss");
+        patternsList.add("/swagger-ui/**");
+        patternsList.add("/v3/api-docs/**");
+
+
+        String[] patterns = patternsList.toArray(new String[0]);
+
+        System.out.println("these are mentioned url Patterns " + Arrays.toString(patterns));
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/datamanerp/login","/api/datamanerp/rest","/api/datamanerp/employees/filter","/api/datamanerp/centralized-login",
-                                "/api/datamanerp/employees/filter-records", "/api/datamanerp/employees/filter-recordss", "/swagger-ui/**",
-                                "/v3/api-docs/**"
-                        ).permitAll()
+                        .requestMatchers(patterns).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -49,5 +68,36 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new MD5PasswordEncoder();  // Using MD5 (Not Recommended)
+    }
+
+    public ArrayList<String> listOfAllConfigs(String folderPath){
+
+
+        ArrayList<String> res = new ArrayList<>();
+
+        File folder = new File(folderPath);
+        File[] files = folder.listFiles();
+
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile()) { // If you only want files (not directories)
+                    //System.out.println("File: " + file.getName());
+
+                    String fileName = file.getName();
+                    int dotIndex = fileName.lastIndexOf('.');
+                    if (dotIndex > 0) {
+                        fileName = fileName.substring(0, dotIndex);
+                        System.out.println(fileName);
+                        res.add(fileName);
+                    }
+
+
+                }
+            }
+        } else {
+            System.out.println("Folder does not exist or it's not a directory.");
+        }
+        return res;
+
     }
 }

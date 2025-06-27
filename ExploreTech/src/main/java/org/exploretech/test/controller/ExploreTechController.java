@@ -3,10 +3,13 @@ package org.exploretech.test.controller;
 import com.ctc.wstx.shaded.msv_core.driver.textui.Debug;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import dataman.dmbase.redissessionutil.RedisObjectUtil;
 import dataman.utility.test.util.Utils;
 
 import feign.FeignException;
 import jakarta.servlet.http.HttpServletResponse;
+import org.exploretech.config.DynamicDataSourceBuilder;
+import org.exploretech.config.ExternalConfigAuthService;
 import org.exploretech.feign.AuthService;
 import org.exploretech.feign.DatamanERPService;
 import org.exploretech.feign.UtilityService;
@@ -15,10 +18,15 @@ import org.exploretech.util.UtilForSelfG;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import javax.sql.DataSource;
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 
 @RestController
@@ -120,5 +128,58 @@ public class ExploreTechController {
         }
 
         return ResponseEntity.ok(Map.of("message", "Token is valid samjhe babu"));
+    }
+
+    @Autowired
+    private ExternalConfigAuthService configService;
+
+    @Autowired
+    private DynamicDataSourceBuilder dynamicBuilder;
+
+    private static final String CONFIG_DIR = "C:/Users/Dataman/myconfigfile";
+
+    @Autowired
+    private RedisObjectUtil redisObjectUtil;
+
+
+
+    @GetMapping("/load-propertiesg")
+    public ResponseEntity<?> loadProperties(){
+
+        String configName = redisObjectUtil.getObjectValueAsString("configName", "configName");
+
+        String host1 = configService.getProperty("myconfig1.properties", "sqlHostName");
+        String host2 = configService.getProperty("myconfig2.properties", "sqlHostName");
+        String host3 = configService.getProperty(configName, "sqlHostName");
+
+        System.out.println(host1);
+        System.out.println(host2);
+        System.out.println(host3);
+
+
+        File file = new File(CONFIG_DIR, configName);
+        if (!file.exists()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Config file not found: " + file.getAbsolutePath()));
+        }
+
+        try (FileInputStream fis = new FileInputStream(file)) {
+            Properties props = new Properties();
+            props.load(fis);
+
+            DataSource ds = dynamicBuilder.buildDataSource(props);
+            JdbcTemplate jdbc = dynamicBuilder.buildJdbcTemplate(ds);
+
+            String dbName = jdbc.queryForObject("SELECT DB_NAME()", String.class);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Connected successfully",
+                    "db", dbName,
+                    "host", props.getProperty("sqlHostName")
+            ));
+        } catch (Exception ex) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "error", "Connection failed: " + ex.getMessage()
+            ));
+        }
     }
 }

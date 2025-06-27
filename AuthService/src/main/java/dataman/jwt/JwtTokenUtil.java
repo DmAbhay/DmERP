@@ -23,8 +23,6 @@ public class JwtTokenUtil {
     @Getter
     private final PublicKey publicKey;
 
-
-
     // Constructor to initialize ECDSA keys
     public JwtTokenUtil() {
         try {
@@ -62,7 +60,6 @@ public class JwtTokenUtil {
         return expiration != null && expiration.before(new Date());
     }
 
-
     // Get expiration date from token
     public Date getExpirationDateFromToken(String token) {
         return getClaimFromToken(token, Claims::getExpiration);
@@ -81,7 +78,6 @@ public class JwtTokenUtil {
         return extractClaim(token, claims -> claims.get(key, String.class));
     }
 
-
     // Extract a specific claim from the JWT token
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         Claims claims = Jwts.parserBuilder()
@@ -92,7 +88,6 @@ public class JwtTokenUtil {
         return claimsResolver.apply(claims);
     }
 
-
     // Get the claim from the JWT token
     public <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
         return extractClaim(token, claimsResolver);
@@ -100,7 +95,11 @@ public class JwtTokenUtil {
 
     // Validate the token
     public boolean validateToken(String token, String username) {
-        final String usernameFromToken = extractUsername(token);
+        //System.out.println("username"+ username);
+        username = username.toLowerCase();
+        final String usernameFromToken = extractUsername(token).toLowerCase();
+
+        System.out.println("username from token "+usernameFromToken);
         return (usernameFromToken.equals(username) && !isTokenExpired(token));
     }
 

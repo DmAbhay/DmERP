@@ -35,7 +35,7 @@ public class TirangaDataSourceConfig {
     DataSource companyTirangaDataSource() {
         return DataSourceBuilder.create()
                 .url("jdbc:sqlserver://" + externalConfig.getSqlHostName() + ":" + externalConfig.getSqlPort() +
-                        ";databaseName=" + "aatithyauat_Company" + ";encrypt=true;trustServerCertificate=true")
+                        ";databaseName=" + "tiranga_Company" + ";encrypt=true;trustServerCertificate=true")
                 .username(externalConfig.getSqlUser())
                 .password(externalConfig.getSqlPassword())
                 .driverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver")

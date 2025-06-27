@@ -2,18 +2,31 @@ package dataman.jwt;
 
 
 import dataman.auth.service.UserMastService;
-import dataman.jwt.JwtTokenUtil;
+import dataman.config.DynamicDataSourceBuilder;
+import dataman.dmbase.debug.Debug;
+import dataman.dmbase.exception.DmException;
+import dataman.dmbase.redissessionutil.RedisObjectUtil;
 import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import javax.sql.DataSource;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Properties;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -23,6 +36,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private UserMastService userMastService;
+
+    @Autowired
+    private RedisObjectUtil redisObjectUtil;
+
+    //private static final String CONFIG_DIR = "C:/Users/Dataman/myconfigfile";
+    private static final String CONFIG_DIR = System.getProperty("CONFIG_DIR");
+
+    @Autowired
+    private DynamicDataSourceBuilder dynamicBuilder;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -119,8 +141,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7);
+            System.out.println("powerstar");
             try {
                 username = jwtTokenUtil.extractUsername(jwt);
+                System.out.println("extracted from token "+username);
             } catch (Exception e) {
                 logger.error("JWT Token extraction failed: " + e.getMessage());
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);  // Return 403 if token is invalid
@@ -131,7 +155,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             // Fetch user details from CustomUserDetailsService
-            UserDetails userDetails = userMastService.loadUserByUsername(username);
+            //UserDetails userDetails = userMastService.loadUserByUsername(username);
+            UserDetails userDetails = userMastService.loadUserByUsername(username, npjt);
 
             if (jwtTokenUtil.validateToken(jwt, userDetails.getUsername())) {
                 // Optionally, store user-specific session or check if the token matches the user's session
